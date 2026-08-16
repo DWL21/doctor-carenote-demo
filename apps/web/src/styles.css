@@ -135,11 +135,6 @@ pre { white-space: pre-wrap; max-height: 240px; overflow: auto; background: #f5f
 .soap-section > span { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .soap-section > span strong { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 9px; background: var(--mint); color: var(--green); font-size: 12px; }
 .soap-section textarea { min-height: 118px; resize: vertical; }
-.demo-picker { margin-bottom: 16px; }
-.demo-picker > span { display: block; margin-bottom: 8px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
-.demo-picker > div { display: flex; flex-wrap: wrap; gap: 7px; }
-.demo-picker button { border: 1px solid var(--line); border-radius: 9px; padding: 9px 13px; background: white; color: var(--green); font-size: 11px; font-weight: 700; cursor: pointer; }
-.demo-picker button:hover { border-color: #7ba793; background: #f0f8f4; }
 
 .analysis-card { padding-bottom: 20px; max-height: calc(100vh - 94px); overflow: auto; position: sticky; top: 88px; }
 .sticky-heading { position: sticky; top: -34px; z-index: 2; background: rgba(251,252,251,.97); padding: 34px 0 17px; margin-top: -34px; border-bottom: 1px solid var(--line); }

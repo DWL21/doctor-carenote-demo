@@ -12,42 +12,6 @@ type SoapSectionKey = "subjective" | "objective";
 const INITIAL_INTERVIEW_QUESTION = "지금 가장 불편한 증상을 중심으로, 언제 어떻게 시작되어 지금까지 어떻게 변했는지 편하게 말씀해 주세요.";
 const FALLBACK_INTERVIEW_QUESTION = "말씀하신 내용에서 증상의 변화나 함께 나타난 불편을 조금 더 자세히 말씀해 주세요.";
 
-const DEMO_CASES = [
-  {
-    title: "흉통",
-    sttRecords: ["58세 남성 환자는 오늘 오전 계단을 오르던 중 가슴 중앙이 조이는 증상이 시작됐고, 약 8분간 쉬자 호전됐다고 말함."],
-    documentText: "활력징후: 혈압 152/94 mmHg, 맥박 96회/분, 호흡수 20회/분, 산소포화도 97%. 심전도: 동율동, 심박수 94회/분.",
-    turns: [
-      [INITIAL_INTERVIEW_QUESTION, "오늘 아침 계단을 오르는데 가슴 한가운데가 꽉 조이는 것처럼 아팠고 쉬니까 좋아졌어요."],
-      ["통증이 있을 때 함께 나타난 다른 증상이 있었나요?", "숨이 조금 차고 식은땀이 났지만 어지럽거나 쓰러지지는 않았어요."],
-      ["이전에도 비슷한 증상이 있었나요?", "지난주에 빨리 걸을 때 한 번 비슷했지만 오늘보다 약했어요."],
-    ],
-    nextQuestion: "현재도 가슴 통증이나 숨참이 남아 있나요?",
-  },
-  {
-    title: "두통",
-    sttRecords: ["32세 여성 환자는 6시간 전부터 오른쪽 관자놀이에 욱신거리는 두통이 있고 통증 강도는 10점 중 7점이라고 말함."],
-    documentText: "활력징후: 혈압 118/74 mmHg, 맥박 78회/분, 체온 36.7°C. 의식 명료. 상하지 근력 좌우 각 5/5.",
-    turns: [
-      [INITIAL_INTERVIEW_QUESTION, "오후부터 오른쪽 관자놀이가 욱신거리고 빛을 보면 더 불편해요."],
-      ["두통은 갑자기 심하게 시작됐나요, 서서히 심해졌나요?", "처음에는 약하게 시작해서 한두 시간 동안 점점 심해졌어요."],
-      ["두통과 함께 나타나는 다른 증상이 있나요?", "메스꺼움은 있지만 열이나 팔다리 힘 빠짐은 없어요."],
-    ],
-    nextQuestion: "평소에도 비슷한 두통이 있었는지 말씀해 주세요.",
-  },
-  {
-    title: "복통",
-    sttRecords: ["24세 여성 환자는 어제 저녁 배꼽 주변에서 시작된 통증이 오늘 오른쪽 아랫배로 이동했고 식욕 저하와 메스꺼움이 있다고 말함."],
-    documentText: "활력징후: 혈압 110/70 mmHg, 맥박 104회/분, 체온 38.1°C. 복부 진찰: 우하복부 압통 있음.",
-    turns: [
-      [INITIAL_INTERVIEW_QUESTION, "어제 저녁부터 배꼽 주변이 아프다가 오늘은 오른쪽 아랫배가 더 아파졌어요."],
-      ["통증이 시작된 뒤 강도와 양상이 어떻게 변했나요?", "처음에는 묵직했는데 지금은 움직이거나 기침할 때 찌르듯 더 아파요."],
-      ["통증과 함께 나타난 다른 증상이 있나요?", "입맛이 없고 메스꺼우며 한 번 토했지만 설사는 없어요."],
-    ],
-    nextQuestion: "마지막 월경 시기와 임신 가능성을 말씀해 주세요.",
-  },
-] as const;
-
 function formatTimer(milliseconds: number) {
   const seconds = Math.floor(milliseconds / 1000);
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -385,38 +349,6 @@ export default function App() {
     setSoapSummary((current) => current ? { ...current, [key]: value } : current);
   }
 
-  function loadDemo(demo: (typeof DEMO_CASES)[number]) {
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    previewUrlRef.current = "";
-    setFilePreviewUrl("");
-    setFileType("");
-    setFileName(`${demo.title} 예시 기록`);
-    setDocumentText(demo.documentText);
-    setDocumentStatus("done");
-    setDocumentError("");
-    setPdfInspection(null);
-    setSttRecords([...demo.sttRecords]);
-    setTranscript(demo.sttRecords.join("\n"));
-    setSttError("");
-    setSuggestion("");
-    const messages: InterviewMessage[] = [];
-    for (const [question, answer] of demo.turns) {
-      messages.push({ role: "assistant", content: question }, { role: "user", content: answer });
-    }
-    messages.push({ role: "assistant", content: demo.nextQuestion });
-    setInterviewMessages(messages);
-    setInterviewError("");
-    setInterviewStatus("idle");
-    setSoapSummary(null);
-    setSoapError("");
-    setSoapStatus("idle");
-    void runSoapSummary({
-      voiceMemo: demo.sttRecords.join("\n"),
-      documentText: demo.documentText,
-      interviewRecords: demo.turns.map(([, answer]) => answer),
-    });
-  }
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -544,10 +476,6 @@ export default function App() {
             <article className="card soap-card">
               <div className="card-heading">
                 <div><span className="step">04</span><h2>Summary</h2></div>
-              </div>
-              <div className="demo-picker">
-                <span>예시 데이터</span>
-                <div>{DEMO_CASES.map((demo) => <button type="button" key={demo.title} onClick={() => loadDemo(demo)}>{demo.title}</button>)}</div>
               </div>
               <button className="soap-button" type="button" onClick={() => void requestSoapSummary()} disabled={!hasSoapSource || soapStatus === "summarizing"}>
                 {soapStatus === "summarizing" ? "요약 중" : "요약"}

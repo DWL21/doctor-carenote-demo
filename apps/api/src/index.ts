@@ -22,6 +22,7 @@ app.use("*", async (c, next) => {
     return fetch(url.toString(), {
       method: c.req.method === "HEAD" ? "HEAD" : "GET",
       redirect: "follow",
+      cf: { cacheTtl: 0 },
     });
   }
   await next();

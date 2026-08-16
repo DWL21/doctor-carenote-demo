@@ -34,7 +34,7 @@
    - 고정 질문 수나 강제 체크리스트가 없어야 함
 4. `Summary`
    - 1–3 중 하나라도 데이터가 있으면 실행 가능
-   - 파일 파싱 완료와 합성 예시 선택 직후에는 S/O를 자동 생성
+   - 파일 파싱 완료 직후에는 S/O를 자동 생성
    - `요약` 버튼은 현재 1–3 상태로 다시 생성하는 수동 재실행 버튼
    - 결과는 `Subjective`, `Objective` 두 항목만 출력
    - 두 결과는 사용자가 직접 편집 가능
@@ -46,7 +46,6 @@
 
 - `apps/web/src/App.tsx`
   - 모든 화면 상태와 녹음·파일·문진·요약 흐름
-  - `DEMO_CASES`: 흉통, 두통, 복통 합성 데이터
   - `INITIAL_INTERVIEW_QUESTION`: 첫 자유 서술 질문
 - `apps/web/src/api.ts`: Worker API 클라이언트
 - `apps/web/src/types.ts`: 프론트 응답 타입
@@ -141,16 +140,6 @@ DeepSeek가 SOAP의 S 수집에만 제한된 꼬리 질문 한 개를 반환한�
 - 충분해도 사용자가 추가 정보를 자유롭게 남길 수 있어야 한다.
 
 관련 설계 근거는 `docs/04-adaptive-soap-strategy.md`에 정리돼 있다.
-
-## 6. 합성 데모 데이터
-
-`Summary` 카드의 세 버튼이 전체 파이프라인 상태를 채운다.
-
-- 흉통: 운동 중 압박감·호흡곤란·식은땀 / 활력징후·심전도 기술
-- 두통: 편측 박동성 통증·광과민·메스꺼움 / 활력징후·의식·근력
-- 복통: 배꼽 주변에서 우하복부로 이동한 통증·구토 / 활력징후·우하복부 압통
-
-데이터는 모두 가상이며 진단명이 없다. 버튼을 누른 뒤 1–3 카드에 데이터가 들어갔는지 확인하고 `Summary > 요약`을 실행한다. 기대 결과는 환자 보고가 S, 활력징후·진찰·검사가 O에만 나타나는 것이다.
 
 ## 7. 미국 검사 PDF 샘플과 파이프라인 검증
 
@@ -281,7 +270,7 @@ npm run build
 2. 녹음 종료 후 STT 스택 누적
 3. PDF/JPG/PNG 텍스트 및 미리보기 순서
 4. 문진 답변 저장 후 스피너와 적응형 꼬리 질문
-5. 세 예시 각각 S/O 요약
+5. 대표 샘플 PDF의 S/O 요약
 6. 출력에 새로운 진단·권고가 없는지 검토
 
 ## 10. 배포
@@ -307,6 +296,7 @@ wrangler pages deploy apps/web/dist --project-name doctor-simplyimg --branch mai
 ```
 
 `doctor.simplyimg.com`은 Worker가 `doctor-simplyimg.pages.dev`를 프록시한다. `doctor-api.simplyimg.com`은 같은 Worker의 API 도메인이다. 이 구성을 바꿀 때 `apps/api/src/index.ts`의 호스트 프록시와 `apps/api/wrangler.jsonc`의 routes/CORS를 함께 수정한다.
+Pages 루트 HTML이 이전 배포로 남지 않도록 프록시 fetch에는 `cf.cacheTtl: 0`을 적용한다. 2026-08-17 배포 Worker 버전은 `185bf3e9-3dc9-4519-8315-66668255ec8c`이다.
 
 ## 11. 오류와 복원력
 
