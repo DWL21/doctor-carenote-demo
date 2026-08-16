@@ -150,7 +150,80 @@ DeepSeek가 SOAP의 S 수집에만 제한된 꼬리 질문 한 개를 반환한�
 
 데이터는 모두 가상이며 진단명이 없다. 버튼을 누른 뒤 1–3 카드에 데이터가 들어갔는지 확인하고 `Summary > 요약`을 실행한다. 기대 결과는 환자 보고가 S, 활력징후·진찰·검사가 O에만 나타나는 것이다.
 
-## 7. 로컬 실행
+## 7. 미국 검사 PDF 샘플과 파이프라인 검증
+
+원본은 `samples/us-medical-pdfs/`에 있으며 모두 공개된 미국 기관·검사사업자의 샘플 또는 설명용 문서다. 실제 환자 문서가 아니다. 로고와 저작권은 각 발행처에 있으므로 내부 테스트 외 용도로 재배포하지 않는다.
+
+| 파일 | 출처 | 페이지 / 크기 | 검증 목적 |
+|---|---|---:|---|
+| `us-labcorp-chromosome-analysis-sample-report.pdf` | [LabCorp/Integrated Genetics sample](https://womenshealth.labcorp.com/sites/default/files/2021-11/Chrom-Analysis-Blood-rep-710-v1-1012_0.pdf) | 1 / 약 114KB | 암호화된 텍스트 PDF, 유전검사 결과·해석 |
+| `us-labcorp-m3-sample-report.pdf` | [HealthIT.gov 게시 LabCorp sample](https://isp.healthit.gov/sites/default/files/webform/uscid_webform/1606/M3-Checklist-Sample-Report-04232017.pdf) | 4 / 약 402KB | 표가 많은 정신건강 선별검사, 환자 응답과 계산 점수 분리 |
+| `us-quest-vitamin-d-sample-report.pdf` | [Quest Diagnostics sample](https://www.questdiagnostics.com/content/dam/corporate/restricted/documents/test-directory/vit-d-db066890v-out-of-range.pdf) | 1 / 약 114KB | 단일 정량검사, 단위·참고범위·low flag 보존 |
+| `us-roswell-park-pathology-sample.pdf` | [Roswell Park sample pathology report](https://www.roswellpark.org/sites/default/files/sample_pathology_report1.pdf) | 1 / 약 270KB | 결과가 채워지지 않은 병리 템플릿과 placeholder 거부 |
+
+### 업로드 제한
+
+- 한 번에 파일 1개
+- PDF/JPG/JPEG/PNG
+- 파일당 최대 10MB
+- 음성은 별도로 녹음 건당 최대 5MB, 브라우저에서 60초 자동 종료
+
+### 2026-08-17 검증 결과
+
+1. Poppler `pdfinfo` 검사: 4개 모두 정상 PDF, 총 7페이지, Letter 크기, JavaScript 없음.
+2. 전 페이지 PNG 렌더링 및 육안 검사: 글자 잘림·겹침·깨짐 없음. 각 문서에 `SAMPLE REPORT`, `PATIENT, SAMPLE` 또는 설명용 placeholder가 보임.
+3. 로컬 `pdftotext`: 4개 모두 텍스트 추출 성공.
+4. 프론트와 동일한 `@firecrawl/pdf-inspector-wasm` 1.14.2:
+   - 4개 모두 `TextBased`
+   - 페이지 수 1/4/1/1 정확
+   - Markdown 길이 약 2027/13715/1976/1980자
+   - OCR 필요 페이지 없음
+5. 운영 `/v1/documents/extract`:
+   - LabCorp M3와 Quest는 충분한 텍스트 추출
+   - 암호화된 LabCorp 염색체 문서와 Roswell 표 템플릿은 서버 Markdown Conversion 결과가 매우 짧음
+   - 현재 프론트는 브라우저 WASM을 먼저 사용하므로 실제 사용자 경로에서는 네 문서 모두 충분한 텍스트를 얻음. 이 순서를 제거하면 안 됨.
+6. 운영 `/v1/soap/summarize`:
+   - LabCorp 염색체: S 없음, 핵형·검체·측정 정보는 O
+   - LabCorp M3: 환자 자기보고 응답은 S, 계산된 점수·flag는 O
+   - Quest Vitamin D: S 없음, `21 ng/mL`, `L`, 참고범위 `30-100 ng/mL`는 O
+   - Roswell 병리: 채워지지 않은 템플릿이므로 S/O 모두 `자료에 기록된 내용 없음`, `unresolved`에 빈 템플릿임을 표시해야 함
+   - 네 응답 모두 `assessment`, `plan` 키가 없어야 함
+7. 인앱 브라우저 자동화는 검증 시점에 연결 가능한 브라우저 인스턴스가 없어 실행하지 못함. 프론트 동일 WASM + 운영 API 조합은 통과했으며, 실제 UI 업로드는 아래 수동 항목으로 최종 확인할 것.
+
+검증 과정에서 빈 병리 템플릿의 필드 설명을 실제 O로 오인하는 문제가 발견되어 `apps/api/src/deepseek.ts`에 placeholder/예시 거부 규칙을 추가했다. 향후 샘플을 추가할 때도 `SAMPLE`이라는 단어만으로 전체를 버리지 말고, 실제로 채워진 합성 결과와 설명용 placeholder를 구분해야 한다.
+
+### 재검증 명령
+
+프론트와 동일한 WASM 기반 4개 샘플 회귀검사:
+
+```bash
+npm run validate:samples
+```
+
+PDF 메타데이터와 렌더링:
+
+```bash
+pdfinfo samples/us-medical-pdfs/us-quest-vitamin-d-sample-report.pdf
+mkdir -p tmp/pdfs/check
+pdftoppm -png -r 120 samples/us-medical-pdfs/us-quest-vitamin-d-sample-report.pdf tmp/pdfs/check/quest
+```
+
+운영 서버 fallback 파싱:
+
+```bash
+curl -f -X POST https://doctor-api.simplyimg.com/v1/documents/extract \
+  -H 'Origin: https://doctor.simplyimg.com' \
+  -F 'file=@samples/us-medical-pdfs/us-quest-vitamin-d-sample-report.pdf;type=application/pdf'
+```
+
+브라우저에서 네 PDF를 각각 `File Upload`에 올리고 다음을 확인한다.
+
+1. 파싱 텍스트가 미리보기보다 먼저 나타남
+2. 원본 PDF가 아래 미리보기에 표시됨
+3. `Summary > 요약` 결과가 S/O만 포함함
+4. 숫자, 단위, reference range, negation, sample/template 상태가 보존됨
+
+## 8. 로컬 실행
 
 요구 버전: Node.js 22 이상.
 
@@ -178,7 +251,7 @@ DEEPSEEK_MODEL=deepseek-v4-flash
 
 키를 `VITE_` 변수, 프론트 코드, 문서, 로그, 커밋에 넣지 않는다. 현재 로컬 `.dev.vars`와 배포 Worker에는 키가 설정돼 있지만 값은 인수인계 문서에 기록하지 않는다.
 
-## 8. 검증
+## 9. 검증
 
 모든 변경 후 실행:
 
@@ -203,7 +276,7 @@ npm run build
 5. 세 예시 각각 S/O 요약
 6. 출력에 새로운 진단·권고가 없는지 검토
 
-## 9. 배포
+## 10. 배포
 
 Worker:
 
@@ -227,7 +300,7 @@ wrangler pages deploy apps/web/dist --project-name doctor-simplyimg --branch mai
 
 `doctor.simplyimg.com`은 Worker가 `doctor-simplyimg.pages.dev`를 프록시한다. `doctor-api.simplyimg.com`은 같은 Worker의 API 도메인이다. 이 구성을 바꿀 때 `apps/api/src/index.ts`의 호스트 프록시와 `apps/api/wrangler.jsonc`의 routes/CORS를 함께 수정한다.
 
-## 10. 오류와 복원력
+## 11. 오류와 복원력
 
 - DeepSeek 요청은 429 또는 5xx와 잘못된 JSON에 대해 최대 2회 시도한다.
 - STT나 문서 처리 후 백그라운드 분류가 실패해도 사용자가 만든 텍스트는 유지한다.
@@ -235,7 +308,7 @@ wrangler pages deploy apps/web/dist --project-name doctor-simplyimg --branch mai
 - S/O 요약 실패는 사용자에게 오류로 표시하며 입력 데이터는 보존한다.
 - API 오류 응답에는 `requestId`가 포함된다. 운영 원인 분석 시 Worker 로그와 연결한다.
 
-## 11. 의료정보 안전 경계
+## 12. 의료정보 안전 경계
 
 - 합성 데이터로만 데모한다.
 - 현재 실제 환자정보 저장소, 사용자 인증, 감사 로그, 접근통제가 없다.
@@ -243,7 +316,7 @@ wrangler pages deploy apps/web/dist --project-name doctor-simplyimg --branch mai
 - 실제 의료정보를 처리하기 전에 동의, 개인정보 처리, 데이터 위치·보존, 공급자 계약, 암호화, 권한 관리, 감사, 국내 규제 검토가 필요하다.
 - 생성 결과는 임상 의사결정이나 응급 분류를 대체하지 않는다.
 
-## 12. 다음 에이전트의 작업 규칙
+## 13. 다음 에이전트의 작업 규칙
 
 - UI에는 인프라·모델·요금제 설명을 노출하지 않는다.
 - 카드 제목은 영어로 유지한다: `STT`, `File Upload`, `Voice Interview`, `Summary`.

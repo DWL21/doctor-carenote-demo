@@ -88,5 +88,6 @@ describe("doctor demo API", () => {
     const payload = JSON.parse(String(request?.body)) as { messages: Array<{ role: string; content: string }> };
     expect(payload.messages[0]).toMatchObject({ role: "system" });
     expect(payload.messages[0]?.content).toContain("Never invent or infer clinical facts");
+    expect(payload.messages[0]?.content).toContain("Never convert them into patient facts or test findings");
   });
 });

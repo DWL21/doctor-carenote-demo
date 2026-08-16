@@ -70,6 +70,8 @@ Source rules:
 - O: only measurements, test findings, imaging/lab/document facts, or explicitly observed findings.
 - Do not output diagnoses, differential diagnoses, assessments, recommendations, or plans.
 - Classify each fact by what it represents, not merely by which source stream contains it.
+- Detect blank forms, templates, field instructions, placeholders, and illustrative examples. Never convert them into patient facts or test findings.
+- A document labeled SAMPLE may contain populated synthetic results; retain only values actually populated for the sample patient. If it only explains what fields would contain, write "자료에 기록된 내용 없음" and note that it is an unpopulated template in unresolved.
 - Preserve negation, uncertainty, dates, numbers, units, and medication names.
 - Reconcile duplicates conservatively. If sources conflict, retain the conflict in unresolved.
 - Each section may be free-form and as short or detailed as its evidence supports.
