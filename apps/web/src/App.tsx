@@ -218,6 +218,9 @@ export default function App() {
   async function processFile(file: File) {
     setDocumentError("");
     setDocumentText("");
+    setSoapSummary(null);
+    setSoapError("");
+    setSoapStatus("idle");
     setPdfInspection(null);
     setFileName(file.name);
     const allowed = ["application/pdf", "image/jpeg", "image/png"];
@@ -260,6 +263,11 @@ export default function App() {
       }
       setDocumentText(text);
       setDocumentStatus("done");
+      void runSoapSummary({
+        voiceMemo: transcript,
+        documentText: text,
+        interviewRecords: interviewMessages.filter((message) => message.role === "user").map((message) => message.content),
+      });
       void runClassification(text, sourceType).catch((classificationError) => {
         console.warn("Background classification failed", classificationError);
       });
@@ -353,14 +361,18 @@ export default function App() {
 
   async function requestSoapSummary() {
     if (!hasSoapSource) return;
+    await runSoapSummary({
+      voiceMemo: transcript,
+      documentText,
+      interviewRecords: patientInterviewRecords.map((message) => message.content),
+    });
+  }
+
+  async function runSoapSummary(input: { voiceMemo: string; documentText: string; interviewRecords: string[] }) {
     setSoapError("");
     setSoapStatus("summarizing");
     try {
-      const result = await summarizeSoap({
-        voiceMemo: transcript,
-        documentText,
-        interviewRecords: patientInterviewRecords.map((message) => message.content),
-      });
+      const result = await summarizeSoap(input);
       setSoapSummary(result);
       setSoapStatus("done");
     } catch (cause) {
@@ -398,6 +410,11 @@ export default function App() {
     setSoapSummary(null);
     setSoapError("");
     setSoapStatus("idle");
+    void runSoapSummary({
+      voiceMemo: demo.sttRecords.join("\n"),
+      documentText: demo.documentText,
+      interviewRecords: demo.turns.map(([, answer]) => answer),
+    });
   }
 
   return (
@@ -548,6 +565,9 @@ export default function App() {
                       <textarea value={soapSummary[key]} onChange={(event) => updateSoapSection(key, event.target.value)} rows={5} />
                     </label>
                   ))}
+                  {soapSummary.unresolved.length > 0 && (
+                    <div className="unresolved-box">{soapSummary.unresolved.map((item) => <p key={item}>{item}</p>)}</div>
+                  )}
                 </div>
               )}
             </article>
