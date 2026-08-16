@@ -565,9 +565,6 @@ export default function App() {
                       <textarea value={soapSummary[key]} onChange={(event) => updateSoapSection(key, event.target.value)} rows={5} />
                     </label>
                   ))}
-                  {soapSummary.unresolved.length > 0 && (
-                    <div className="unresolved-box">{soapSummary.unresolved.map((item) => <p key={item}>{item}</p>)}</div>
-                  )}
                 </div>
               )}
             </article>

@@ -158,6 +158,8 @@ DeepSeek가 SOAP의 S 수집에만 제한된 꼬리 질문 한 개를 반환한�
 
 | 파일 | 출처 | 페이지 / 크기 | 검증 목적 |
 |---|---|---:|---|
+| `us-kinetic-cervical-xray-mvc-sample-report.pdf` | [Kinetic Radiology MVC sample](https://kineticradiology.com/wp-content/uploads/2024/08/MVC-Rad-Report.pdf) | 1 / 약 92KB | 교통사고 후 목 통증·두통(S)과 경추 X-ray 측정·소견(O)을 함께 검증 |
+| `us-kinetic-lumbar-mri-sample-report.pdf` | [Kinetic Radiology lumbar MRI sample](https://kineticradiology.com/wp-content/uploads/2024/08/Lumbar-Spine-MR-without-contrast-Sample-Report.pdf) | 1 / 약 65KB | 손상 후 허리·좌측 다리 통증(S)과 L3-L4 MRI 소견(O)을 함께 검증 |
 | `us-labcorp-chromosome-analysis-sample-report.pdf` | [LabCorp/Integrated Genetics sample](https://womenshealth.labcorp.com/sites/default/files/2021-11/Chrom-Analysis-Blood-rep-710-v1-1012_0.pdf) | 1 / 약 114KB | 암호화된 텍스트 PDF, 유전검사 결과·해석 |
 | `us-labcorp-m3-sample-report.pdf` | [HealthIT.gov 게시 LabCorp sample](https://isp.healthit.gov/sites/default/files/webform/uscid_webform/1606/M3-Checklist-Sample-Report-04232017.pdf) | 4 / 약 402KB | 표가 많은 정신건강 선별검사, 환자 응답과 계산 점수 분리 |
 | `us-quest-vitamin-d-sample-report.pdf` | [Quest Diagnostics sample](https://www.questdiagnostics.com/content/dam/corporate/restricted/documents/test-directory/vit-d-db066890v-out-of-range.pdf) | 1 / 약 114KB | 단일 정량검사, 단위·참고범위·low flag 보존 |
@@ -172,31 +174,35 @@ DeepSeek가 SOAP의 S 수집에만 제한된 꼬리 질문 한 개를 반환한�
 
 ### 2026-08-17 검증 결과
 
-1. Poppler `pdfinfo` 검사: 4개 모두 정상 PDF, 총 7페이지, Letter 크기, JavaScript 없음.
-2. 전 페이지 PNG 렌더링 및 육안 검사: 글자 잘림·겹침·깨짐 없음. 각 문서에 `SAMPLE REPORT`, `PATIENT, SAMPLE` 또는 설명용 placeholder가 보임.
-3. 로컬 `pdftotext`: 4개 모두 텍스트 추출 성공.
+1. Poppler `pdfinfo` 검사: 6개 모두 정상 PDF, 총 9페이지, JavaScript 없음.
+2. 전 페이지 PNG 렌더링 및 육안 검사: 글자 잘림·겹침·깨짐 없음. Kinetic 문서는 환자 식별 필드가 비어 있거나 가려진 공개 샘플임.
+3. 로컬 `pdftotext`: 6개 모두 텍스트 추출 성공.
 4. 프론트와 동일한 `@firecrawl/pdf-inspector-wasm` 1.14.2:
-   - 4개 모두 `TextBased`
-   - 페이지 수 1/4/1/1 정확
-   - Markdown 길이 약 2027/13715/1976/1980자
+   - 6개 모두 `TextBased`
+   - 페이지 수 1/1/1/4/1/1 정확
+   - Kinetic 경추 X-ray / 요추 MRI Markdown 길이 약 2582/1846자
    - OCR 필요 페이지 없음
 5. 운영 `/v1/documents/extract`:
    - LabCorp M3와 Quest는 충분한 텍스트 추출
    - 암호화된 LabCorp 염색체 문서와 Roswell 표 템플릿은 서버 Markdown Conversion 결과가 매우 짧음
-   - 현재 프론트는 브라우저 WASM을 먼저 사용하므로 실제 사용자 경로에서는 네 문서 모두 충분한 텍스트를 얻음. 이 순서를 제거하면 안 됨.
+   - 현재 프론트는 브라우저 WASM을 먼저 사용하므로 실제 사용자 경로에서는 여섯 문서 모두 충분한 텍스트를 얻음. 이 순서를 제거하면 안 됨.
 6. 운영 `/v1/soap/summarize`:
+   - Kinetic 경추 X-ray: 교통사고 후 목 통증·두통은 S, 경추 측정값·영상 소견은 O
+   - Kinetic 요추 MRI: 손상 후 허리·좌측 다리 통증은 S, L3-L4 돌출·협착 측정은 O
    - LabCorp 염색체: S 없음, 핵형·검체·측정 정보는 O
    - LabCorp M3: 환자 자기보고 응답은 S, 계산된 점수·flag는 O
    - Quest Vitamin D: S 없음, `21 ng/mL`, `L`, 참고범위 `30-100 ng/mL`는 O
    - Roswell 병리: 채워지지 않은 템플릿이므로 S/O 모두 `자료에 기록된 내용 없음`, `unresolved`에 빈 템플릿임을 표시해야 함
-   - 네 응답 모두 `assessment`, `plan` 키가 없어야 함
+   - 여섯 응답 모두 `assessment`, `plan` 키가 없어야 함
 7. 인앱 브라우저 자동화는 검증 시점에 연결 가능한 브라우저 인스턴스가 없어 실행하지 못함. 프론트 동일 WASM + 운영 API 조합은 통과했으며, 실제 UI 업로드는 아래 수동 항목으로 최종 확인할 것.
 
 검증 과정에서 빈 병리 템플릿의 필드 설명을 실제 O로 오인하는 문제가 발견되어 `apps/api/src/deepseek.ts`에 placeholder/예시 거부 규칙을 추가했다. 향후 샘플을 추가할 때도 `SAMPLE`이라는 단어만으로 전체를 버리지 말고, 실제로 채워진 합성 결과와 설명용 placeholder를 구분해야 한다.
 
+Kinetic 문서 최초 검증에서는 모델이 `INDICATION(S)`의 증상을 S가 아닌 `unresolved`로 보내는 문제가 있었다. `Clinical History`, `Indication(s)`, `Reason for Exam`에 명시된 증상·경과는 직접 인용이 아니어도 S로 분류하되, 검사 요청·의심 진단·일반적 시술명만 있는 경우는 S에서 제외하도록 규칙을 보강했다. Worker 버전 `5db54993-cb21-4b6e-b03b-384a0f08643f`에서 두 Kinetic 샘플 모두 S/O 비어 있지 않고 `unresolved`가 비어 있는 것을 운영 API로 확인했다.
+
 ### 재검증 명령
 
-프론트와 동일한 WASM 기반 4개 샘플 회귀검사:
+프론트와 동일한 WASM 기반 6개 샘플 회귀검사:
 
 ```bash
 npm run validate:samples
@@ -218,7 +224,7 @@ curl -f -X POST https://doctor-api.simplyimg.com/v1/documents/extract \
   -F 'file=@samples/us-medical-pdfs/us-quest-vitamin-d-sample-report.pdf;type=application/pdf'
 ```
 
-브라우저에서 네 PDF를 각각 `File Upload`에 올리고 다음을 확인한다.
+브라우저에서 여섯 PDF를 각각 `File Upload`에 올리고 다음을 확인한다.
 
 1. 파싱 텍스트가 미리보기보다 먼저 나타남
 2. 원본 PDF가 아래 미리보기에 표시됨
@@ -308,7 +314,7 @@ wrangler pages deploy apps/web/dist --project-name doctor-simplyimg --branch mai
 - STT나 문서 처리 후 백그라운드 분류가 실패해도 사용자가 만든 텍스트는 유지한다.
 - 문진의 DeepSeek 질문 생성이 실패해도 환자 답변을 먼저 스택에 저장하고 대체 질문을 표시한다.
 - S/O 요약 실패는 사용자에게 오류로 표시하며 입력 데이터는 보존한다.
-- 빈 템플릿 등으로 분류할 임상 사실이 없으면 `unresolved`를 Summary 카드에 표시한다.
+- `unresolved`는 API 내부 검증 정보로만 유지하고 Summary 화면에는 노출하지 않는다.
 - API 오류 응답에는 `requestId`가 포함된다. 운영 원인 분석 시 Worker 로그와 연결한다.
 
 ## 12. 의료정보 안전 경계

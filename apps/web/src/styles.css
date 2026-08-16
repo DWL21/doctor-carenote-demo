@@ -135,9 +135,6 @@ pre { white-space: pre-wrap; max-height: 240px; overflow: auto; background: #f5f
 .soap-section > span { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .soap-section > span strong { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 9px; background: var(--mint); color: var(--green); font-size: 12px; }
 .soap-section textarea { min-height: 118px; resize: vertical; }
-.unresolved-box { border: 1px solid #ead9a8; border-radius: 11px; background: #fff9e9; padding: 11px 13px; color: #745d2d; }
-.unresolved-box p { margin: 0; font-size: 11px; line-height: 1.55; }
-.unresolved-box p + p { margin-top: 5px; }
 .demo-picker { margin-bottom: 16px; }
 .demo-picker > span { display: block; margin-bottom: 8px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; }
 .demo-picker > div { display: flex; flex-wrap: wrap; gap: 7px; }

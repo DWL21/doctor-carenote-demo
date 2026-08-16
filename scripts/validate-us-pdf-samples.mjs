@@ -6,6 +6,8 @@ const root = new URL("..", import.meta.url).pathname;
 const sampleDir = join(root, "samples/us-medical-pdfs");
 const wasmPath = join(root, "node_modules/@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm");
 const expected = new Map([
+  ["us-kinetic-cervical-xray-mvc-sample-report.pdf", /Neck pain and headaches|C3-C4|3\.03 mm/i],
+  ["us-kinetic-lumbar-mri-sample-report.pdf", /Low back pain after injury|L3-L4|3\.7 mm/i],
   ["us-labcorp-chromosome-analysis-sample-report.pdf", /45,XX,der\(13;14\)|Chromosome Analysis/i],
   ["us-labcorp-m3-sample-report.pdf", /M3 (Score|CHECKLIST)|49/i],
   ["us-quest-vitamin-d-sample-report.pdf", /VITAMIN D|21 L|30-100 ng\/mL/i],

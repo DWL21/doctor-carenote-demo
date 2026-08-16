@@ -89,5 +89,6 @@ describe("doctor demo API", () => {
     expect(payload.messages[0]).toMatchObject({ role: "system" });
     expect(payload.messages[0]?.content).toContain("Never invent or infer clinical facts");
     expect(payload.messages[0]?.content).toContain("Never convert them into patient facts or test findings");
+    expect(payload.messages[0]?.content).toContain("Clinical History, Indication, Indications, or Reason for Exam belong in S");
   });
 });
