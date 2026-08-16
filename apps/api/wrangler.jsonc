@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "doctor-demo-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "ai": {
+    "binding": "AI"
+  },
+  "routes": [
+    {
+      "pattern": "doctor.simplyimg.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "doctor-api.simplyimg.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://doctor.simplyimg.com,https://doctor-simplyimg.pages.dev",
+    "DEEPSEEK_MODEL": "deepseek-v4-flash"
+  }
+}
